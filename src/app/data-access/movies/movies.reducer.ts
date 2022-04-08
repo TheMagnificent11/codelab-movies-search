@@ -1,7 +1,10 @@
 import { produce } from 'immer';
 
 import { MovieState, MovieItem } from './movies.model';
-import { buildMatchIndicator, computeFilteredMovies } from './movies.filters';
+import {
+  buildMatchIndicator,
+  computeFilteredMovies as useFilterBy,
+} from './movies.filters';
 
 interface MovieSearchResults {
   searchBy: string;
@@ -30,11 +33,14 @@ export function updateFilterAction(filterBy: string): MovieAction {
 
 const isString = (source: unknown) => typeof source === 'string';
 
+/**
+ * Reduce the action to state changes
+ * NOTE: the MovieState is a 'serializable' data structure
+ */
 export function reduceMovieAction(
   state: MovieState,
   action: MovieAction
 ): MovieState {
-  debugger;
   return produce(state, (draft) => {
     switch (action.type) {
       case 'searchBy':
@@ -48,9 +54,16 @@ export function reduceMovieAction(
           : '';
         break;
     }
-    const movies = computeFilteredMovies(draft);
-    const addMatchIndicators = buildMatchIndicator(draft.filterBy);
-
-    draft.filteredMovies = addMatchIndicators(movies);
   });
+}
+
+/**
+ * Why are computed properties valuable, calculated on-demand
+ * and NOT serialized.
+ */
+export function computeFilteredMovies(state: MovieState): MovieItem[] {
+  const movies = useFilterBy(state);
+  const addMatchIndicators = buildMatchIndicator(state.filterBy);
+
+  return addMatchIndicators(movies);
 }

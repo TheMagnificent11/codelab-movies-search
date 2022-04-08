@@ -12,7 +12,8 @@ import {
   MovieViewModel,
 } from './movies.model';
 import {
-  moviesReducer,
+  computeFilteredMovies,
+  reduceMovieAction,
   searchAction,
   updateFilterAction,
 } from './movies.reducer';
@@ -39,7 +40,8 @@ export class MoviesFacade {
       return produce<MovieState>(
         this.state,
         (s: MovieState): MovieViewModel => {
-          return { ...s, ...api };
+          const filteredMovies = computeFilteredMovies(s);
+          return { ...s, ...api, filteredMovies };
         }
       ) as MovieViewModel;
     };
@@ -62,7 +64,7 @@ export class MoviesFacade {
       .subscribe((list: MovieItem[]) => {
         const allMovies = list as MovieItem[];
 
-        this.state = moviesReducer(
+        this.state = reduceMovieAction(
           this.state,
           searchAction(searchBy, allMovies)
         );
@@ -76,7 +78,7 @@ export class MoviesFacade {
    * Update the filterBy value used to build the `filteredMovies` list
    */
   updateFilter(filterBy?: string) {
-    this.state = moviesReducer(this.state, updateFilterAction(filterBy));
+    this.state = reduceMovieAction(this.state, updateFilterAction(filterBy));
     this._emitter.next(this.state);
 
     return this.vm$;
