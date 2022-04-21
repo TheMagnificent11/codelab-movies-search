@@ -1,0 +1,11 @@
+{
+  "cSpell.allowCompoundWords": true,
+  "cSpell.customDictionaries": {
+    "degreed": {
+      "path": "${workspaceRoot}/.vscode/cspell.txt",
+      "addWords": true
+    },
+    "custom": true, // Enable the `custom` dictionary
+    "internal-terms": false // Disable the `internal-terms` dictionary
+  }
+}
