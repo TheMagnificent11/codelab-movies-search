@@ -1,24 +1,56 @@
-import { MovieState } from './movies.model';
+import { produce } from 'immer';
+import { buildMatchIndicator, computeFilteredMovies } from './movies.filters';
+import { MovieItem, MovieState } from './movies.model';
 
-export interface MovieAction {
-  type: 'searchBy' | 'clearFilter';
-  payload?: string;
+enum ActionType {
+  searchMovies = 'searchMovies',
+  filterMovies = 'filterMovies'
 }
 
-export function searchAction(searchBy: string): MovieAction {
-  return { type: 'searchBy', payload: searchBy };
+interface Action {
+  type: ActionType;
 }
 
-export function clearFilterAction(): MovieAction {
-  return { type: 'clearFilter' };
+export interface movieSearchAction extends Action {
+  type: ActionType.searchMovies;
+  searchBy: string;
+  allMovies: MovieItem[];
+}
+
+export interface filterMoviesAction extends Action {
+  type: ActionType.filterMovies;
+  filterBy: string;
+}
+
+export type MovieAction = movieSearchAction | filterMoviesAction;
+
+export const actions = {
+  searchMovies(searchBy: string, allMovies: MovieItem[]): movieSearchAction {
+    return { type: ActionType.searchMovies, searchBy, allMovies };
+  },
+  filterMovies(filterBy: string): filterMoviesAction {
+    return { type: ActionType.filterMovies, filterBy };
+  }
 }
 
 export function moviesReducer(state: MovieState, action: MovieAction) {
-  switch (action.type) {
-    case 'searchBy':
-      return state; // fixme
-    case 'clearFilter':
-      return state; // fixme
-  }
-  return state;
+  return produce<MovieState>(state, draft => {
+    switch (action.type) {
+      case ActionType.searchMovies:
+        draft.allMovies = action.allMovies;
+        draft.searchBy = action.searchBy;
+
+        break;
+
+      case ActionType.filterMovies:
+        const movies = computeFilteredMovies(draft);
+        const matchInOverview = buildMatchIndicator(action.filterBy);
+
+        draft.filterBy = action.filterBy
+        draft.filteredMovies = matchInOverview(movies);
+
+        break;
+
+    }
+  });
 }
