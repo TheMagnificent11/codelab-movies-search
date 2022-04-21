@@ -1,10 +1,9 @@
 import { Injectable } from '@angular/core';
-
+import { freeze, produce } from 'immer';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-
-import { buildMatchIndicator, computeFilteredMovies } from './movies.filters';
 import { MoviesDataService } from './movies.data-service';
+import { buildMatchIndicator, computeFilteredMovies } from './movies.filters';
 import { initState, MovieItem, MovieState, MovieViewModel } from './movies.model';
 
 /**
@@ -20,7 +19,7 @@ export class MoviesFacade {
   public vm$: Observable<MovieViewModel>;
 
   constructor(private movieAPI: MoviesDataService) {
-    const state = initState();
+    const state = freeze(initState());
     const api = {
       loadMovies: (searchBy: string) => this.loadMovies(searchBy),
       updateFilter: (filterBy: string) => this.updateFilter(filterBy),
@@ -45,8 +44,10 @@ export class MoviesFacade {
     this.movieAPI.searchMovies(searchBy, page).subscribe((list: unknown) => {
       const allMovies = list as MovieItem[];
 
-      this.state.allMovies = allMovies;
-      this.state.searchBy = searchBy;
+      this.state = produce<MovieState>(this.state, draft => {
+        draft.allMovies = allMovies;
+        draft.searchBy = searchBy;
+      });
 
       this.updateFilter(this.state.filterBy);
     });
@@ -58,11 +59,14 @@ export class MoviesFacade {
    * Update the filterBy value used to build the `filteredMovies` list
    */
   updateFilter(filterBy?: string) {
-    this.state.filterBy = filterBy;
     const movies = computeFilteredMovies(this.state);
     const matchInOverview = buildMatchIndicator(filterBy);
 
-    this.state.filteredMovies = matchInOverview(movies);
+    this.state = produce<MovieState>(this.state, draft => {
+      draft.filterBy = filterBy;
+      draft.filteredMovies = matchInOverview(movies);
+    });
+
     this._emitter.next(this.state);
 
     return this.vm$;
